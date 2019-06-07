@@ -2,9 +2,11 @@ import click
 import configparser
 import sys
 
+from .glabel import Glabel
+
 def get_credentials(file):
     """ Derives credentials form an auth file
-        :param file: a config file with auth keys
+        :param: a config file with auth keys
         :return: config list with twitter credentials
     """
     config = configparser.ConfigParser()
@@ -13,10 +15,12 @@ def get_credentials(file):
     return config['github']['token']
 
 @click.command()
-@click.option('--config_file', default='./auth.cfg',
+@click.option('--config_file', default='./config.cfg',
                 help='A path to a configuration file',
                 type=click.Path(exists=True))
 
 def run(config_file):
     """ Run terminal labeler """
-
+    token = get_credentials(config_file)
+    lbl = Glabel(token)
+    lbl.read()

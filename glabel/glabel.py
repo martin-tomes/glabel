@@ -8,9 +8,7 @@ class Glabel:
 
     def __init__(self, token, session=None):
         ''' Class constructor initializes a session and last ID'''
-        page = requests.get('https://api.github.com/user', headers = headers(token))
-        page.raise_for_status()
-        print(page.text)
+        self.page = requests.get('https://api.github.com/repos/tomesm/labely-test/pulls/1/files', headers = self.headers(token))
 
     def headers(self, token):
         """ Gets headers
@@ -19,4 +17,6 @@ class Glabel:
         """
         return {'Authorization': 'token' + token}
 
-
+    def read(self):
+        self.page.raise_for_status()
+        print(self.page.text)
