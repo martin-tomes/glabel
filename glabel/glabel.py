@@ -20,3 +20,4 @@ class Glabel:
     def read(self):
         self.page.raise_for_status()
         print(self.page.text)
+
