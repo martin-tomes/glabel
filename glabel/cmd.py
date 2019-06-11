@@ -20,6 +20,7 @@ def get_credentials(file):
                 type=click.Path(exists=True))
 @click.option('--state', default='open',
                 help='Filter pulls by state. [default: open]')
+@click.option('--base', help='Filter pulls by base (PR target) branch name.')
 
 def run(config_file):
     """ Run terminal labeler """
