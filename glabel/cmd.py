@@ -15,12 +15,13 @@ def get_credentials(file):
     return config['github']['token']
 
 @click.command()
-@click.option('--config_file', default='./config.cfg',
-                help='A path to a configuration file.',
+@click.option('-c', '--config_file', default='./config.cfg',
+                help='A path to a configuration file.', metavar='FILENAME',
                 type=click.Path(exists=True))
-@click.option('--state', default='open',
-                help='Filter pulls by state. [default: open]')
-@click.option('--base', help='Filter pulls by base (PR target) branch name.')
+@click.option('-s', '--state', default='open',
+                help='Filter pulls by state. [default: open]',
+                type=click.Choice(['open', 'closed', 'all']))
+@click.option('-b', '--base', help='Filter pulls by base (PR target) branch name.', metavar='BRANCH')
 
 def run(config_file):
     """ Run terminal labeler """
