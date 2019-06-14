@@ -22,6 +22,8 @@ def get_credentials(file):
                 help='Filter pulls by state. [default: open]',
                 type=click.Choice(['open', 'closed', 'all']))
 @click.option('-b', '--base', help='Filter pulls by base (PR target) branch name.', metavar='BRANCH')
+@click.option('d', '--delete-old', default=True, help='Delete labels that do not match anymore.')
+
 
 def run(config_file):
     """ Run terminal labeler """
