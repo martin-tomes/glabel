@@ -1,4 +1,6 @@
-config.cfg
+auth.cfg
+labels.cfg
+
 .vscode/
 
 # Byte-compiled / optimized / DLL files

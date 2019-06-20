@@ -15,8 +15,10 @@ def get_credentials(file):
     return config['github']['token']
 
 @click.command()
-@click.option('-c', '--config_file', default='./config.cfg',
-                help='A path to a configuration file.', metavar='FILENAME',
+@click.option('-a', '--config-auth', default='./auth.cfg',
+                help='File with authorization configuration.', metavar='FILENAME',
+                type=click.Path(exists=True))
+@click.option('-l', '--config-labels', default='./labels.cfg', metavar='FILENAME',
                 type=click.Path(exists=True))
 @click.option('-s', '--state', default='open',
                 help='Filter pulls by state. [default: open]',
