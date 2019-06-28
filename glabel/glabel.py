@@ -5,17 +5,15 @@ import time
 OWNER = '/tomesm'
 BASE_URL = 'https://api.github.com'
 REPOS = '/repos'
-REPO = '/labely-test'
-
 
 class Glabel:
     ''' Class for running the github labeler logic '''
 
-    def __init__(self, token, session=None):
+    def __init__(self, token, reposlugs, session=None):
         ''' Class constructor initializes a session and last ID'''
-        # self.page = requests.get('https://api.github.com/repos/tomesm/labely-test/pulls/1/files', headers = self.headers(token))
         self.session = session or requests.Session()
         self.set_session(token)
+        self.reposlugs = reposlugs
 
     def set_session(self, token):
         """ Gets headers
@@ -25,8 +23,16 @@ class Glabel:
         self.session.headers['Authorization'] = 'token' + token
 
     def read(self):
-        url = BASE_URL + REPOS + OWNER + REPO + '/pulls'
+        owner, repo = self.handle_slug(self.reposlugs[0])
+
+        url = BASE_URL + REPOS + owner + repo + '/pulls'
         response = self.session.get(url)
         response.raise_for_status()
         print(response.json())
+
+    def handle_slug(self, slug):
+        owner = slug.split('/')[0]
+        repo = slug.split('/')[1]
+        return '/' + owner, '/' + repo
+
 

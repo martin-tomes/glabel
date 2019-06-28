@@ -22,7 +22,7 @@ from .glabel import Glabel
 def run(config_auth, config_labels, state, base, delete_old, reposlugs):
     """ Run terminal labeler """
     token = get_credentials(config_auth)
-    lbl = Glabel(token)
+    lbl = Glabel(token, reposlugs)
     lbl.read()
 
 
