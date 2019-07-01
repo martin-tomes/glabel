@@ -3,7 +3,7 @@ import configparser
 import sys
 
 from .glabel import Glabel
-
+from .api import API
 
 @click.command()
 @click.option('-a', '--config-auth', default='./auth.cfg',
@@ -22,7 +22,8 @@ from .glabel import Glabel
 def run(config_auth, config_labels, state, base, delete_old, reposlugs):
     """ Run terminal labeler """
     token = get_credentials(config_auth)
-    lbl = Glabel(token, reposlugs)
+    api = API(token)
+    lbl = Glabel(api, reposlugs)
     lbl.read()
 
 
