@@ -7,21 +7,17 @@ def get_keys(file, section):
     return list(parser[section].keys())
 
 
-def set_parser(file, section):
+def parse_config(file, section):
     parser = configparser.ConfigParser()
     parser.read(file)
 
-    d = {}
+    parsed = {}
 
     for key in list(parser[section].keys()):
-        confs = []
+        strings = parser[section][key]
+        parsed[key] = strings.split('\n')
 
-        for str in parser[section][key]:
-            confs.append(str)
-
-        d[key] = confs
-
-    return d
+    return parsed
 
 
 class Glabel:
@@ -31,12 +27,19 @@ class Glabel:
         ''' Class constructor initializes a session and last ID'''
         self.reposlugs = reposlugs
         self.api = api
-        self.keys = get_keys(config, 'labels')
-        self.values = set_parser(config, 'labels')
+        self.configs = parse_config(config, 'labels')
+        # print(self.values)
+        for section in self.configs.values():
+            print(section)
+            match = [v for v in section if fnmatch.fnmatch('templates', v)]
 
-        print(self.values)
+            print(match)
+
+
+
 
     def handle_slugs(self, slugs):
+        print(slugs)
         owner = slugs[0]
         repo = slugs[1]
         return '/' + owner, '/' + repo
@@ -53,6 +56,8 @@ class Glabel:
 
             label = filename.split('/')[0]
 
-            if fnmatch.fnmatch(label, '*templates*'):
-                print(label)
+            for value in self.configs.values():
+                print(value)
+                # if fnmatch.fnmatch(label, '*templates*'):
+                    # print(label)
 
