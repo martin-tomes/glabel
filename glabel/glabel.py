@@ -10,13 +10,10 @@ def get_keys(file, section):
 def parse_config(file, section):
     parser = configparser.ConfigParser()
     parser.read(file)
-
     parsed = {}
-
     for key in list(parser[section].keys()):
         strings = parser[section][key]
         parsed[key] = strings.split('\n')
-
     return parsed
 
 
@@ -32,14 +29,9 @@ class Glabel:
         for section in self.configs.values():
             print(section)
             match = [v for v in section if fnmatch.fnmatch('templates', v)]
-
             print(match)
 
-
-
-
     def handle_slugs(self, slugs):
-        print(slugs)
         owner = slugs[0]
         repo = slugs[1]
         return '/' + owner, '/' + repo
