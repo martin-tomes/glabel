@@ -45,6 +45,7 @@ class Glabel:
 
 
     def handle_response(self, response):
+        print(response)
         for section in response:
             if section['status'] == 'modified':
                 filename = section['filename']

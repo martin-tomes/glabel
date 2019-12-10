@@ -28,5 +28,6 @@ class API:
         response.raise_for_status()
         return response.json()
 
-    def post_labels(self, pull_number, label):
+    def post_labels(self, owner, repo, number, labels):
         ''' POST /repos/:owner/:repo/issues/:issue_number/labels '''
+        url = self.base_url + owner + repo + '/issues/' + number + '/' + labels
