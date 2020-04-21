@@ -3,7 +3,6 @@ import configparser
 import sys
 
 from .glabel import Glabel
-from .api import API
 
 
 def get_credentials(file):
@@ -33,7 +32,5 @@ def get_credentials(file):
 def run(auth, config, state, base, delete_old, reposlugs):
     """ Run terminal labeler """
     token = get_credentials(auth)
-    api = API(token)
-    lbl = Glabel(api, config, reposlugs)
-
-    lbl.read()
+    lbl = Glabel(token, config, reposlugs)
+    print(lbl.read_repo())

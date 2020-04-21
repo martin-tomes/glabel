@@ -1,33 +1,39 @@
 import requests
+import json
+import logging
 
-class API:
+from . import errors
+
+class Api:
     """ Class for handling github API calls  """
 
-    def __init__(self, token):
+    def __init__(self, token, owner):
         self.token = token
-        self.set_session(token)
-        self.base_url = 'https://api.github.com/repos'
+        self.set_session(token, owner)
+        self.base_url = 'https://api.github.com'
+        self.logger = logging.getLogger("Glabel")
 
-    def set_session(self, token):
+    def set_session(self, token, owner):
         """ Gets headers
         :param token: GitHub personal access token
         """
         self.session = requests.Session()
+        self.session.auth = (owner, token)
         self.session.headers = {'User-Agent': 'Python'}
-        self.session.headers['Authorization'] = 'token' + token
+        self.session.headers['Content-Type'] = 'application/vnd.github.v3+json'
 
-    def get_pull_number(self, owner, repo):
-        url = self.base_url + owner + repo + '/pulls'
-        response = self.session.get(url)
+    def execute(self, method, endpoints, data=None):
+        resonse = requests.Response()
+        if method == 'get':
+            response = self.session.get(self.base_url + endpoints)
+        elif method == 'post':
+            if data is not None:
+                response = self.session.post(self.base_url + endpoints, data)
+        else:
+            self.logger.exception("Glabel api call internal exception")
+
         response.raise_for_status()
-        return str(response.json()[0]['number'])
+        return json.loads(response.text)
 
-    def get_pull_files(self, owner, repo, pull_number):
-        url = self.base_url + owner + repo + '/pulls/' + pull_number + '/files'
-        response = self.session.get(url)
-        response.raise_for_status()
-        return response.json()
 
-    def post_labels(self, owner, repo, number, labels):
-        ''' POST /repos/:owner/:repo/issues/:issue_number/labels '''
-        url = self.base_url + owner + repo + '/issues/' + number + '/' + labels
+
