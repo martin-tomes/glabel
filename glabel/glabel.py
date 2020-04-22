@@ -1,7 +1,14 @@
 import fnmatch
 import configparser
+import json
+import logging
+import requests
+import asyncio
+import aiohttp
+import ssl
+import certifi
 
-from .api import Api
+# from .api import Api
 
 
 def parse_config(file, section):
@@ -21,42 +28,62 @@ class Glabel:
 
     def __init__(self, token, config, reposlugs):
         ''' Class constructor initializes a session and last ID'''
-        self.owner = reposlugs[0]
-        self.api = Api(token, self.owner)
-        self.repos = reposlugs[1:]
+        self.reposlugs = reposlugs
+        self.token = token
         self.configs = parse_config(config, 'labels')
-        self.issue_number = ""
+        self.base_url = 'https://api.github.com'
 
+    def setup_session(self):
+        """ Gets headers
+            :param token: GitHub personal access token
+        """
+        connector = aiohttp.TCPConnector(verify_ssl=False)
+        return aiohttp.ClientSession(headers={"Authorization": F'token {self.token}'}, connector=connector)
 
-    def get_repos(self):
-        return self.api.execute('get', '/user' + '/repos')
+    async def execute_request(self, method, endpoints, data=None):
+        ''' Perform HTTP requests to the API '''
+        async with self.setup_session() as s:
+            if method == 'get':
+                async with s.get(self.base_url + endpoints) as r:
+                    data = await r.text()
+                    r.raise_for_status()
+                    return json.loads(data)
 
+    async def run(self):
+        tasks = []
+        for slug in self.reposlugs:
+            owner = slug.split('/')[0]
+            repo = slug.split('/')[1]
+            tasks.append(self.scan_repo(owner, repo))
 
-    def get_pull_requests(self, repo):
+        await asyncio.wait(tasks)
+
+    async def scan_repo(self, owner, repo):
+        print("Scanning {}".format(repo))
+        pr_numbers = await self.get_pr_numbers(owner, repo)
+        for pull_number in pr_numbers:
+            files = await self.get_pull_files(owner, repo, pull_number)
+            labels = self.find_labels(files)
+            await self.update_labels(owner, repo, pull_number, labels)
+            # print("Labels added: {}".format(labels))
+            # print("Finished {}".format(repo))
+
+    async def get_pr_numbers(self, owner, repo):
+        pulls = await self.get_pull_requests(owner, repo)
+        return [pull['number'] for pull in pulls]
+
+    async def get_pull_requests(self, owner, repo):
         ''' GET /repos/:owner/:repo/pulls '''
-        endpoints = '/repos/{}/{}/pulls'.format(self.owner, repo)
-        return self.api.execute('get', endpoints)
+        endpoints = '/repos/{}/{}/pulls'.format(owner, repo)
+        return await self.execute_request('get', endpoints)
 
-
-    def set_issue_number(self, repo):
-        pulls = self.get_pull_requests(repo)
-        # TODO enable handling of multiple pull requests
-        self.issue_number = str(pulls[0]['number'])
-
-
-    def get_pull_files(self, repo, pull_number):
+    async def get_pull_files(self, owner, repo, pull_number):
         ''' GET /repos/:owner/:repo/pulls/:pull_number/files '''
-        endpoints = '/repos/{}/{}/pulls/{}/files'.format(self.owner, repo, pull_number)
-        return self.api.execute('get', endpoints)
+        endpoints = '/repos/{}/{}/pulls/{}/files'.format(
+            owner, repo, pull_number)
+        return await self.execute_request('get', endpoints)
 
-
-    def read_repo(self):
-        self.set_issue_number(self.repos[0])
-        files = self.get_pull_files(self.repos[0], self.issue_number)
-        return self.check_files(files)
-
-
-    def check_files(self, files):
+    def find_labels(self, files):
         labels = []
         for section in files:
             if any(status in section['status'] for status in ('added', 'modified')):
@@ -66,12 +93,10 @@ class Glabel:
                     labels.append(label)
         return labels
 
-
     def find_label(self, filename):
         for key, value in self.configs.items():
             if self.is_match(value, filename):
                 return key
-
 
     def is_match(self, value, label):
         for item in value:
@@ -79,20 +104,15 @@ class Glabel:
                 return True
         return False
 
-
-    def post_labels(self):
+    async def update_labels(self, owner, repo, pull_number, labels):
         ''' POST /repos/:owner/:repo/issues/:issue_number/labels '''
         # We need to create a string object so that we can replace quotation marks to desired format
-        labels = str(self.read_repo())
+        labels = str(labels)
         labels = labels.replace('\'', '"')
         body = '{"labels": ' + labels + '}'
-        endpoints= '/repos' + self.owner + '/' + self.repos[0] + '/issues' + self.issue_number
-        self.api.execute('post', endpoints, body)
-        print("Labels added")
+        endpoints = '/repos/{}/{}/issues/{}'.format(owner, repo, pull_number)
+        await self.execute_request('post', endpoints, body)
 
-
-    def get_labels():
+    def get_labels(self):
         ''' GET /repos/:owner/:repo/issues/:issue_number/labels '''
         # Check if the repo has already some labels
-
-

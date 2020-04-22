@@ -1,6 +1,6 @@
-import click
 import configparser
-import sys
+import click
+import asyncio
 
 from .glabel import Glabel
 
@@ -16,21 +16,34 @@ def get_credentials(file):
 
 
 @click.command()
-@click.option('-a', '--auth', default='./auth.cfg',
-              help='File with authorization configuration.', metavar='FILENAME',
+@click.option('-a', '--config-auth',
+              default='./auth.cfg',
+              help='File with authorization configuration.',
+              metavar='FILENAME',
               type=click.Path(exists=True))
-@click.option('-c', '--config', default='./config.cfg', metavar='FILENAME',
+@click.option('-c', '--config-labels',
+              default='./config.cfg',
+              help='File with labels configuration',
+              metavar='FILENAME',
               type=click.Path(exists=True))
-@click.option('-s', '--state', default='open', help='Filter pulls by state. [default: open]',
-              type=click.Choice(['open', 'closed', 'all']), required=False)
-@click.option('-b', '--base', default='master', help='Filter pulls by base (PR target) branch name.',
-              metavar='BRANCH', required=False)
-@click.option('-d', '--delete-old', default=True, help='Delete labels that do not match anymore.',
+@click.option('-s', '--state',
+              default='open',
+              help='Filter pulls by state. [default: open]',
+              type=click.Choice(['open', 'closed', 'all']),
               required=False)
+@click.option('-b', '--base',
+              default='master',
+              help='Filter pulls by base (PR target) branch name.',
+              metavar='BRANCH',
+              required=False)
+@click.option('-d/-D', '--delete-old/--no-delete-old',
+              default=True,
+              is_flag=True,
+              show_default=True,
+              help='Delete labels that do not match anymore.')
 @click.argument('reposlugs', nargs=-1, required=False)
-
-def run(auth, config, state, base, delete_old, reposlugs):
+def run(config_auth, config_labels, state, base, delete_old, reposlugs):
     """ Run terminal labeler """
-    token = get_credentials(auth)
-    lbl = Glabel(token, config, reposlugs)
-    print(lbl.read_repo())
+    token = get_credentials(config_auth)
+    lbl = Glabel(token, config_labels, reposlugs)
+    asyncio.run(lbl.run())
