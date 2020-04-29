@@ -36,14 +36,28 @@ def get_credentials(file):
               help='Filter pulls by base (PR target) branch name.',
               metavar='BRANCH',
               required=False)
-@click.option('-d/-D', '--delete-old/--no-delete-old',
+@click.option('-d', '--delete-old',
               default=True,
               is_flag=True,
               show_default=True,
               help='Delete labels that do not match anymore.')
+@click.option('-D', '--delete-all',
+              default=False,
+             # is_flag=True,
+              show_default=True,
+              help='Delete all labels from reposlugs.')
 @click.argument('reposlugs', nargs=-1, required=False)
-def run(config_auth, config_labels, state, base, delete_old, reposlugs):
+def run(config_auth, config_labels, state, base, delete_old, delete_all, reposlugs):
     """ Run terminal labeler """
     token = get_credentials(config_auth)
-    lbl = Glabel(token, config_labels, reposlugs)
-    asyncio.run(lbl.run())
+    print(delete_old)
+    asyncio.run(main(token, config_labels, reposlugs, delete_all))
+
+
+async def main(token, config_labels, reposlugs, delete_all):
+    lbl = Glabel(token, config_labels, reposlugs, delete_all)
+
+    try:
+        await lbl.run()
+    finally:
+        await lbl.close()
