@@ -1,146 +1,54 @@
-import fnmatch
-import configparser
-import json
-import logging
-import requests
 import asyncio
 import aiohttp
-
-# from .api import Api
-
-
-def parse_config(file, section):
-    # TODO: create one config parser. do not instantiate it again!!
-    parser = configparser.ConfigParser()
-    parser.read(file)
-    parsed = {}
-
-    for key in list(parser[section].keys()):
-        strings = parser[section][key]
-        parsed[key] = strings.split('\n')
-    return parsed
+import json
 
 
 def setup_session(token):
-    """ Gets headers
+    """ Sets up auiohttp session
         :param token: GitHub personal access token
     """
     connector = aiohttp.TCPConnector(verify_ssl=False)
     headers = {'Authorization': F'token {token}'}
     return aiohttp.ClientSession(headers=headers, connector=connector)
 
+class Api:
+    ''' This class executes all REST API calls to the githb'''
 
-class Glabel:
-    ''' Class for running the github labeler logic '''
-
-    def __init__(self, token, config, reposlugs):
-        ''' Class constructor initializes a session and last ID'''
-        self.reposlugs = reposlugs
+    def __init__(self, token):
         self.token = token
-        self.configs = parse_config(config, 'labels')
-        self.base_url = 'https://api.github.com'
-        # self.session = setup_session(token)
 
-    # def setup_session(self):
-    #     """ Gets headers
-    #         :param token: GitHub personal access token
-    #     """
-    #     connector = aiohttp.TCPConnector(verify_ssl=False)
-    #     return aiohttp.ClientSession(headers={"Authorization": F'token {self.token}'}, connector=connector)
-
-    async def execute_request(self, method, endpoints, body=None):
-        ''' Perform HTTP requests to the API '''
-        connector = aiohttp.TCPConnector(verify_ssl=False)
-        headers = {'Authorization': F'token {token}'}
-        async with aiohttp.ClientSession(headers=headers, connector=connector) as s:
-            async with s.request(method, self.base_url + endpoints, params=body, timeout=None) as r:
+    async def execute_request(self, method, endpoints, params=None, data=None):
+        ''' Executes HTTP requests to the API '''
+        async with setup_session(self.token) as s:
+            url = 'https://api.github.com' + endpoints
+            async with s.request(method, url, params=params, json=data) as r:
                 data = await r.text()
                 r.raise_for_status()
-                return json.loads(data)
+                if r.status == 200:
+                    return json.loads(data)
+                else:
+                    return r.status
 
-            # s.close()
-            # if method == 'get':
-            #     async with s.get(self.base_url + endpoints) as r:
-            #         data = await r.text()
-            #         r.raise_for_status()
-            #         return json.loads(data)
-            # elif method == 'post':
-            #     async with s.post(self.base_url + endpoints, params=body) as r:
-            #         data = await r.text()
-            #         r.raise_for_status()
-            #         return json.loads(data)
-
-    async def run(self):
-        tasks = []
-        for slug in self.reposlugs:
-            owner = slug.split('/')[0]
-            repo = slug.split('/')[1]
-            tasks.append(self.scan_repo(owner, repo))
-
-        await asyncio.wait(tasks)
-
-        # await self.session.close()
-        # await self.session.close()
-
-    async def scan_repo(self, owner, repo):
-        print("Scanning {}".format(repo))
-        pr_numbers = await self.get_pr_numbers(owner, repo)
-        print(pr_numbers)
-        for pull_number in pr_numbers:
-            files = await self.get_pull_files(owner, repo, pull_number)
-            labels = self.find_labels(files)
-            await self.update_labels(owner, repo, pull_number, labels)
-            # print("Labels added: {}".format(labels))
-            # print("Finished {}".format(repo))
-
-    async def get_pr_numbers(self, owner, repo):
-        pulls = await self.get_pull_requests(owner, repo)
-        return [pull['number'] for pull in pulls]
-
-    async def get_pull_requests(self, owner, repo):
+    async def get_pull_requests(self, owner, repo, state):
         ''' GET /repos/:owner/:repo/pulls '''
-        endpoints = '/repos/{}/{}/pulls'.format(owner, repo)
-        return await self.execute_request('get', endpoints)
+        endpoints = F'/repos/{owner}/{repo}/pulls'
+        return await self.execute_request('get', endpoints, params={'state': state})
 
     async def get_pull_files(self, owner, repo, pull_number):
         ''' GET /repos/:owner/:repo/pulls/:pull_number/files '''
-        endpoints = '/repos/{}/{}/pulls/{}/files'.format(
-            owner, repo, pull_number)
+        endpoints = F'/repos/{owner}/{repo}/pulls/{pull_number}/files'
         return await self.execute_request('get', endpoints)
-
-    def find_labels(self, files):
-        labels = []
-        for section in files:
-            if any(status in section['status'] for status in ('added', 'modified')):
-                filename = section['filename']
-                label = self.find_label(filename)
-                if label not in labels:
-                    labels.append(label)
-        return labels
-
-    def find_label(self, filename):
-        for key, value in self.configs.items():
-            if self.is_match(value, filename):
-                return key
-
-    def is_match(self, value, label):
-        for item in value:
-            if fnmatch.fnmatch(label, item):
-                return True
-        return False
 
     async def update_labels(self, owner, repo, pull_number, labels):
         ''' POST /repos/:owner/:repo/issues/:issue_number/labels '''
-        # We need to create a string object so that we can replace quotation marks to desired format
-        labels = str(labels)
-        labels = labels.replace('\'', '"')
-        body = '{"labels": ' + labels + '}'
-        endpoints = '/repos/{}/{}/issues/{}'.format(owner, repo, pull_number)
-        await self.execute_request('post', endpoints, body)
+        endpoints = F'/repos/{owner}/{repo}/issues/{pull_number}'
+        return await self.execute_request('patch', endpoints, data={'labels': labels})
+        # return response
 
-    # def get_labels(self):
-    #     ''' GET /repos/:owner/:repo/issues/:issue_number/labels '''
-    #     # Check if the repo has already some labels
-
-    # async def close(self):
-    #     await self.session.close()
+    async def delete_all_labels(self, owner, repo, pull_number):
+        '''DELETE /repos/:owner/:repo/issues/:issue_number/labels
+            Deletes all labels in a given repository
+        '''
+        endpoints = F'/repos/{owner}/{repo}/issues/{pull_number}/labels'
+        response = await self.execute_request('delete', endpoints)
+        print(response)

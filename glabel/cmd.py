@@ -50,14 +50,14 @@ def get_credentials(file):
 def run(config_auth, config_labels, state, base, delete_old, delete_all, reposlugs):
     """ Run terminal labeler """
     token = get_credentials(config_auth)
-    print(delete_old)
-    asyncio.run(main(token, config_labels, reposlugs, delete_all))
+    lbl = Glabel(token, config_labels, reposlugs, delete_all, state)
+    asyncio.run(lbl.run())
 
 
-async def main(token, config_labels, reposlugs, delete_all):
-    lbl = Glabel(token, config_labels, reposlugs, delete_all)
+# async def main(token, config_labels, reposlugs, delete_all):
+#     lbl = Glabel(token, config_labels, reposlugs, delete_all)
 
-    try:
-        await lbl.run()
-    finally:
-        await lbl.close()
+#     try:
+#         await lbl.run()
+#     finally:
+#         await lbl.close()
