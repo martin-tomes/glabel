@@ -21,12 +21,13 @@ def parse_config(conf, section):
 
 
 class Glabel:
-    def __init__(self, token, config, reposlugs, delete_all, state):
+    def __init__(self, token, config, reposlugs, delete_all, state, base):
         self.api = Api(token)
         self.reposlugs = reposlugs
         self.configs = parse_config(config, 'labels')
         self.delete_all = delete_all
         self.state = state 
+        self.base = base
 
     async def run(self):
         tasks = []
@@ -38,7 +39,7 @@ class Glabel:
 
     async def scan_repo(self, owner, repo):
         print("Scanning {}".format(repo))
-        pulls = await self.api.get_pull_requests(owner, repo, self.state)
+        pulls = await self.api.get_pull_requests(owner, repo, self.state, self.base)
         pr_numbers = [pull['number'] for pull in pulls] 
         for number in pr_numbers:
             await self.handle_pull_request(owner, repo, number)

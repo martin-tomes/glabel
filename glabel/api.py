@@ -22,17 +22,20 @@ class Api:
         async with setup_session(self.token) as s:
             url = 'https://api.github.com' + endpoints
             async with s.request(method, url, params=params, json=data) as r:
-                data = await r.text()
+                data_resp = await r.text()
                 r.raise_for_status()
                 if r.status == 200:
-                    return json.loads(data)
+                    return json.loads(data_resp)
                 else:
                     return r.status
 
-    async def get_pull_requests(self, owner, repo, state):
+    async def get_pull_requests(self, owner, repo, state, base=None):
         ''' GET /repos/:owner/:repo/pulls '''
         endpoints = F'/repos/{owner}/{repo}/pulls'
-        return await self.execute_request('get', endpoints, params={'state': state})
+        params = {'state': state}
+        if base is not None:
+            params['base'] = base
+        return await self.execute_request('get', endpoints, params=params)
 
     async def get_pull_files(self, owner, repo, pull_number):
         ''' GET /repos/:owner/:repo/pulls/:pull_number/files '''
