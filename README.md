@@ -7,8 +7,7 @@ Usage: filabel.py [OPTIONS] [REPOSLUGS]...
 
 Options:
   -s, --state [open|closed|all]   Filter pulls by state.  [default: open]
-  -d, --delete-old / 
-                                  Delete labels that do not match anymore.
+  -d, --delete-old                Delete labels that do not match anymore.
                                   [default: True]
   -D, --delete-all                Delete all labels.
                                   [default: False]
