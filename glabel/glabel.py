@@ -55,10 +55,6 @@ class Glabel:
             updated_labels = ([label['name'] for label in response['labels']])
             print(F"Labels added: {updated_labels} for repo: {repo} pull: {pull_number}")
 
-    # def evaluate_response(self, response):
-    #     return [item['name'] for item in response]
-
-
     def find_labels(self, files):
         statuses = ('added', 'modified')
         labels = []
@@ -88,7 +84,3 @@ class Glabel:
         labels = str(labels)
         labels = labels.replace('\'', '"')
         return '{"labels": ' + labels + '}'
-
-    # async def close(self):
-    #     await self.session.close()
-

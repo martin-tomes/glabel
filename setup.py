@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='glabel',
     version='0.1',
-    description='App for labeling GitHub pull requests',
+    description='GitHub pull requests labeling app',
     author='Martin Tomes',
     author_email='jsem@martintomes.net',
     license='Public Domain',

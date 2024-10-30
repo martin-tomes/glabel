@@ -52,12 +52,3 @@ def run(config_auth, config_labels, state, base, delete_old, delete_all, reposlu
     token = get_credentials(config_auth)
     lbl = Glabel(token, config_labels, reposlugs, delete_all, state, base)
     asyncio.run(lbl.run())
-
-
-# async def main(token, config_labels, reposlugs, delete_all):
-#     lbl = Glabel(token, config_labels, reposlugs, delete_all)
-
-#     try:
-#         await lbl.run()
-#     finally:
-#         await lbl.close()
